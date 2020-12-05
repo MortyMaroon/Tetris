@@ -50,21 +50,19 @@ public class SolverTest {
     @Test
     public void should() {
         asertAI("......." +
-                "......I" +
-                "..LL..I" +
-                "...LI.I" +
-                ".SSLI.I" +
-                "SSOOIOO" +
-                "..OOIOO",
+                      "......I" +
+                      "..LL..I" +
+                      "...LI.I" +
+                      ".SSLI.I" +
+                      "SSOOIOO" +
+                      "..OOIOO",
                 "T",
                 pt(1, 2),
                 new String[] {"I", "O", "L", "Z"},
                 Direction.DOWN);
     }
 
-    private void asertAI(String glass, String figureType,
-                         Point point, String[] futureFigures,
-                         Direction expected)
+    private void asertAI(String glass, String figureType, Point point, String[] futureFigures, Direction expected)
     {
         String actual = ai.get(BoardTest.getBoard(glass, figureType, point, futureFigures));
         assertEquals(expected.toString(), actual);

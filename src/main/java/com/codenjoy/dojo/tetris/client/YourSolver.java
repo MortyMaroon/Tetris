@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 /*-
  * #%L
@@ -27,6 +28,7 @@ import java.util.List;
  * #L%
  */
 
+import com.codenjoy.dojo.bot.Bot;
 import com.codenjoy.dojo.client.AbstractJsonSolver;
 import com.codenjoy.dojo.client.WebSocketRunner;
 import com.codenjoy.dojo.services.Command;
@@ -55,10 +57,13 @@ public class YourSolver extends AbstractJsonSolver<Board> {
     }
 
     private List<Command> getAnswerList(Board board) {
-        System.out.println(board.getGlass().getAt(board.getCurrentFigurePoint()));
+         new Bot().move(board);
+//        System.out.println(board.getGlass().toString());
+//        System.out.println(board.getCurrentFigureType());
+//        System.out.println(board.getGlass().getAt(board.getCurrentFigurePoint()));
         List<Command> result = new ArrayList<Command>();
-        result.add(Command.LEFT);
-        result.add(Command.random(dice));
+//        result.add(Command.LEFT);
+//        result.add(Command.random(dice));
         result.add(Command.ROTATE_CLOCKWISE_180);
 
         return result;
@@ -67,9 +72,8 @@ public class YourSolver extends AbstractJsonSolver<Board> {
     public static void main(String[] args) {
         WebSocketRunner.runClient(
                 // скопируйте сюда адрес из браузера, на который перейдете после регистрации/логина
-                "http://localhost:8080/codenjoy-contest/board/player/ziwpjz46y4z5567k7uup?code=3867579515136108220&gameName=tetris",
-                new YourSolver(new RandomDice()),
-                new Board());
+                "http://codebattle2020.westeurope.cloudapp.azure.com/codenjoy-contest/board/player/z9ccij3tjhg6b2qf2stf?code=5109995371495340782&gameName=tetris",
+                new YourSolver(new RandomDice()), new Board());
     }
 
 }
