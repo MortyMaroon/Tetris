@@ -2,6 +2,7 @@ package com.codenjoy.dojo.bot;
 
 import com.codenjoy.dojo.services.Command;
 import com.codenjoy.dojo.services.Point;
+import com.codenjoy.dojo.services.Rotation;
 import com.codenjoy.dojo.tetris.client.Board;
 import com.codenjoy.dojo.tetris.client.GlassBoard;
 import com.codenjoy.dojo.tetris.model.Elements;
@@ -16,41 +17,92 @@ public class Bot {
     private Point[] currentFigure;
     private final int SIZE = 17;
     private int figureWidth;
-    private List<Command> result;
     private ArrayList<State> listPoints;
-    private Position position;
+    private Position position = Position.UP;
+    private int numberPossiblePosition = 0;
 
-    public void move(Board board) {
+    private void initialize(Board board) {
         this.glassBoard = board.getGlass();
         this.busyPoints = board.getGlass().getFigures();
         this.currentElement = board.getCurrentFigureType();
         this.currentPoint = board.getCurrentFigurePoint();
         this.currentFigure = board.predictCurrentFigurePoints();
-        this.figureWidth = getRightPointOfFigure() - getLeftPointOfFigure() + 1;
+        this.figureWidth = getRightPointOfFigure() - getLeftPointOfFigure();
         this.listPoints = new ArrayList();
-        this.position = Position.UP;
-
-        show();
-        System.out.println(board.getGlass().toString());
         busyPoints.removeAll(Arrays.asList(currentFigure));
-        switch (currentElement) {
+    }
 
+    public List<Command> move(Board board) {
+        List<Command> result = null;
+        initialize(board);
+        System.out.println(board.getGlass().toString());
+        numberPossiblePosition = SIZE - figureWidth;
+        System.out.println("Ширина фигуры: " + (figureWidth + 1));
+        System.out.println("Количество вариантов постановки хигуры: " + numberPossiblePosition);
+        switch (currentElement) {
             case YELLOW:
-                int numberPossiblePosition = SIZE - figureWidth;
-                for (int i = 0; i <= numberPossiblePosition; i++) {
-                    moveFigureToEdge(i);
-                    while (getBottomPointOfFigure() > 0 && checkPosition()) {
-                        moveFigureBottom();
-                    }
-                    show();
-                    listPoints.add(new State(position, countingPoints(), i));
+
+                checkingOptions(numberPossiblePosition);
+                listPoints.sort(Comparator.comparingInt(State::getPoint));
+                System.out.println(listPoints);
+                result = createMove(chooseBestMove());
+                break;
+
+            case BLUE:
+            case RED:
+            case GREEN:
+
+                for (int external = 0; external < 2; external++) {
+                    checkingOptions(numberPossiblePosition);
+                    turnFigure(board,external);
                 }
                 listPoints.sort(Comparator.comparingInt(State::getPoint));
                 System.out.println(listPoints);
+                result = createMove(chooseBestMove());
+                break;
+
+            case ORANGE:
+            case CYAN:
+            case PURPLE:
+                for (int external = 0; external < 3; external++) {
+                    checkingOptions(numberPossiblePosition);
+                    turnFigure(board,external);
+                }
+                listPoints.sort(Comparator.comparingInt(State::getPoint));
+                System.out.println(listPoints);
+                result = createMove(chooseBestMove());
+                break;
+        }
+        return result;
+    }
+
+    private State chooseBestMove() {
+        return listPoints.get(0);
+    }
+
+    private void checkingOptions(int numberPossiblePosition) {
+        for (int internal = 0; internal <= numberPossiblePosition; internal++) {
+            moveFigureToEdge(internal);
+            while (getBottomPointOfFigure() > 0 && checkPosition()) {
+                moveFigureBottom();
+            }
+            listPoints.add(new State(position, countingPoints(), internal));
         }
     }
 
-    private void createMove(State state) {
+    private void turnFigure(Board board, int direction) {
+        currentFigure = board.predictCurrentFigurePoints(Rotation.CLOCKWIZE_90);
+        figureWidth = getRightPointOfFigure() - getLeftPointOfFigure();
+        numberPossiblePosition = SIZE - figureWidth;
+        switch (direction) {
+            case 0: position = Position.RIGHT; break;
+            case 1: position = Position.DOWN; break;
+            case 2: position = Position.LEFT; break;
+        }
+    }
+
+    private List<Command> createMove(State state) {
+        List<Command> result = new ArrayList<>();
         Position position = state.getPosition();
         int place = state.getPlace();
         int anchorPlace = currentPoint.getX();
@@ -69,6 +121,7 @@ public class Bot {
             }
         }
         result.add(Command.DOWN);
+        return result;
     }
 
     private int countingPoints() {
@@ -165,11 +218,15 @@ public class Bot {
         return rightPoint;
     }
 
-    private void show() {
-        StringBuilder builder = new StringBuilder();
-        for (Point point : currentFigure) {
-            builder.append("{x=" + point.getX() + " y=" + point.getY() + "}\n");
-        }
-        System.out.println(builder.toString());
-    }
+//    private void show() {
+//        StringBuilder builder = new StringBuilder();
+//        for (Point point : currentFigure) {
+//            builder.append("{x=")
+//                    .append(point.getX())
+//                    .append(" y=")
+//                    .append(point.getY())
+//                    .append("}\n");
+//        }
+//        System.out.println(builder.toString());
+//    }
 }

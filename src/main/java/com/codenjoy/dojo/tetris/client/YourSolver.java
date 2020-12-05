@@ -57,16 +57,7 @@ public class YourSolver extends AbstractJsonSolver<Board> {
     }
 
     private List<Command> getAnswerList(Board board) {
-         new Bot().move(board);
-//        System.out.println(board.getGlass().toString());
-//        System.out.println(board.getCurrentFigureType());
-//        System.out.println(board.getGlass().getAt(board.getCurrentFigurePoint()));
-        List<Command> result = new ArrayList<Command>();
-//        result.add(Command.LEFT);
-//        result.add(Command.random(dice));
-        result.add(Command.ROTATE_CLOCKWISE_180);
-
-        return result;
+        return new Bot().move(board);
     }
 
     public static void main(String[] args) {
