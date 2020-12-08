@@ -63,7 +63,7 @@ public class YourSolver extends AbstractJsonSolver<Board> {
     public static void main(String[] args) {
         WebSocketRunner.runClient(
                 // скопируйте сюда адрес из браузера, на который перейдете после регистрации/логина
-                "http://codebattle2020.westeurope.cloudapp.azure.com/codenjoy-contest/board/player/z9ccij3tjhg6b2qf2stf?code=5109995371495340782&gameName=tetris",
+                "http://codebattle2020.westeurope.cloudapp.azure.com/codenjoy-contest/board/player/h84kuhctjywv8ofxmnbu?code=1416442031207378067&gameName=tetris",
                 new YourSolver(new RandomDice()), new Board());
     }
 

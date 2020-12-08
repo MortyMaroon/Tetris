@@ -25,6 +25,8 @@ public class Bot {
     private ArrayList<State> listOfStagingOptions;
     private Position position = Position.UP;
     private int numberPossiblePosition = 0;
+    private double averageHeightBoard;
+    private int maxHeightBoard;
 
     /**
      * Инициализирует поля для работы основных методов
@@ -39,6 +41,9 @@ public class Bot {
         this.figureWidth = getRightPointOfFigure().getX() - getLeftPointOfFigure().getX();
         this.listOfStagingOptions = new ArrayList();
         listBusyPoints.removeAll(Arrays.asList(coordinatesPointsCurrentFigure));
+        this.averageHeightBoard = averageHeightBoard();
+        this.maxHeightBoard = maxHeightBoard();
+
     }
 
     /**
@@ -55,9 +60,8 @@ public class Bot {
         System.out.println("Тип фигуры: " + currentElement);
         switch (currentElement) {
             case YELLOW:
-                System.out.println("Начинаем определение:");
                 checkingOptions(numberPossiblePosition);
-                listOfStagingOptions.sort(Comparator.comparingInt(State::getPoints));
+                listOfStagingOptions.sort(Comparator.comparingDouble(State::getPoints));
                 System.out.println(listOfStagingOptions);
                 result = createMove(chooseBestMove());
                 break;
@@ -69,8 +73,9 @@ public class Bot {
                 for (int external = 0; external < 2; external++) {
                     checkingOptions(numberPossiblePosition);
                     turnFigure(external);
+                    System.out.println("Повернули");
                 }
-                listOfStagingOptions.sort(Comparator.comparingInt(State::getPoints));
+                listOfStagingOptions.sort(Comparator.comparingDouble(State::getPoints));
                 System.out.println(listOfStagingOptions);
                 result = createMove(chooseBestMove());
                 break;
@@ -78,11 +83,12 @@ public class Bot {
             case ORANGE:
             case CYAN:
             case PURPLE:
-                for (int external = 0; external < 3; external++) {
+                for (int external = 0; external < 4; external++) {
                     checkingOptions(numberPossiblePosition);
                     turnFigure(external);
+                    System.out.println("Повернули");
                 }
-                listOfStagingOptions.sort(Comparator.comparingInt(State::getPoints));
+                listOfStagingOptions.sort(Comparator.comparingDouble(State::getPoints));
                 System.out.println(listOfStagingOptions);
                 result = createMove(chooseBestMove());
                 break;
@@ -95,8 +101,21 @@ public class Bot {
      * @return
      */
     private State chooseBestMove() {
-        State bestState = listOfStagingOptions.get(0);
-        return  bestState;
+        ArrayList<State> bestStates = new ArrayList<>();
+        int positionElement = listOfStagingOptions.size() - 1;
+        State bestState = listOfStagingOptions.get(positionElement--);
+        bestStates.add(bestState);
+        double maxPoint = bestState.getPoints();
+        while (positionElement != 0) {
+            bestState = listOfStagingOptions.get(positionElement--);
+            if (bestState.getPoints() == maxPoint) {
+                bestStates.add(bestState);
+            } else {
+                break;
+            }
+        }
+        positionElement = new Random().nextInt(bestStates.size());
+        return bestStates.get(positionElement);
     }
 
     /**
@@ -104,17 +123,12 @@ public class Bot {
      * @param numberPossiblePosition Количество возможных положений текущей фигуры
      */
     private void checkingOptions(int numberPossiblePosition) {
-        show();
-        System.out.println("Переместили фигуру влево");
         moveFigureToLeftBorder();
-        System.out.println("Ширина фигуры: " + (figureWidth + 1));
-        System.out.println("Количество вариантов постановки фигуры: " + numberPossiblePosition + "\n");
         for (int internal = 0; internal <= numberPossiblePosition; internal++) {
             while (getBottomPointOfFigure().getY() > 0 && checkPosition()) {
                 moveFigureBottom();
             }
-            show();
-            listOfStagingOptions.add(new State(position, countingPoints(), internal));
+            listOfStagingOptions.add(new State(position, countingPoints(internal), internal));
             moveFigureToTopBorder();
             moveFigureRight();
         }
@@ -171,7 +185,6 @@ public class Bot {
         }
         int place = state.getPlace();
         int anchorPlace = getLeftPointOfFigure().getX();
-        System.out.println("anchorPlace = " + anchorPlace + " place = " + place);
         if (place < anchorPlace) {
             for (int i = 0; i < anchorPlace - place; i++) {
                 result.add(Command.LEFT);
@@ -189,38 +202,116 @@ public class Bot {
      * Подсчитывает внутренние баллы текущей позиции
      * @return
      */
-    private int countingPoints() {
-        int numberEmptyPoint = countingEmptyPoint(getLeftPointOfFigure().getX(), getTopPointOfFigure().getY());
-        System.out.println("Количество пустых ячеек: " + numberEmptyPoint);
-        int towerHeight = getTopPointOfFigure().getY();
-        System.out.println("Высота башни :" + towerHeight);
-        int sum = numberEmptyPoint + towerHeight;
-        System.out.println("Сумма балов: " + sum);
-        return sum;
+    private double countingPoints(int position) {
+        double numberEmptyPoint = countingEmptyPoint(getLeftPointOfFigure().getX());
+        double towerHeight = getTopPointOfFigure().getY();
+        double numberRemovedLines = countingBrokenLines();
+        if (maxHeightBoard < 14) {
+            if (numberRemovedLines >= 3) {
+                return 1000;
+            }
+            if (position == 0) {
+                return 0;
+            }
+            numberEmptyPoint = (SIZE - numberEmptyPoint) * 2.5;
+            towerHeight = (SIZE - towerHeight) * 1.5;
+        } else {
+            numberEmptyPoint = (SIZE - numberEmptyPoint) * 1.25;
+            towerHeight = (SIZE - towerHeight) * 1.40;
+        }
+        numberRemovedLines = Math.pow(numberRemovedLines,2) * 2 + 3 ;
+
+        return numberEmptyPoint + towerHeight + numberRemovedLines + position * 0.25;
+    }
+
+    private double averageHeightBoard(){
+        int averageHeightBoard = 0;
+        Point tempPoint;
+        for (int column = 1; column <= SIZE; column++) {
+            for (int row = SIZE; row >= 0; row--) {
+                tempPoint = new PointImpl(column,row);
+                if (listBusyPoints.contains(tempPoint)) {
+                    averageHeightBoard = averageHeightBoard + row;
+                    break;
+                }
+            }
+            averageHeightBoard++;
+        }
+        System.out.println("Средняя высота доски: " + averageHeightBoard / SIZE);
+        return averageHeightBoard / SIZE;
+    }
+
+    private int maxHeightBoard(){
+        int maxHeightBoard = 0;
+        Point tempPoint;
+        for (int column = 1; column <= SIZE; column++) {
+            for (int row = SIZE; row >= 0; row--) {
+                tempPoint = new PointImpl(column,row);
+                if (listBusyPoints.contains(tempPoint)) {
+                    if (tempPoint.getY() > maxHeightBoard) {
+                        maxHeightBoard = tempPoint.getY();
+                    }
+                    break;
+                }
+            }
+        }
+        System.out.println("Максимальная высота доски высота доски: " + maxHeightBoard);
+        return maxHeightBoard;
     }
 
     /**
      * Считает количтво образовавшихся пустых точек под местом постановки фигуры
      * @param leftEdge Левая граница фигуры
-     * @param topEdge Верхняя граница фигуры
      * @return Число пустых точек
      */
-    private int countingEmptyPoint(int leftEdge, int topEdge) {
+    private int countingEmptyPoint(int leftEdge) {
         int numberEmptyPoint = 0;
-        Point bottom;
-        System.out.println("Считаем количество пустых точек под фигурой");
-        System.out.println("Левый край фигуры = " + leftEdge + " верхний = " + topEdge);
-        for (int row = leftEdge; row <= leftEdge + figureWidth; row++) {
-            bottom = lowestPointInColumn(row);
-            for (int column = bottom.getY() - 1; column >= 0; column--) {
-                System.out.println("Проверяем точку: " + row + " " + column);
+        Point point;
+        for (int row = leftEdge; row <= getRightPointOfFigure().getX(); row++) {
+            point = lowestPointInColumn(row);
+            int bottom = point.getY();
+            for (int column = bottom - 1; column >= 0; column--) {
                 if (glassBoard.isFree(row,column)) {
-                    System.out.println("Точка является пустой");
                     numberEmptyPoint++;
                 }
             }
         }
         return numberEmptyPoint;
+    }
+
+    /**
+     * Считает возможное количество уничтоженных линий
+     * @return
+     */
+    private int countingBrokenLines() {
+        int numbersLines = 0;
+        for (int row = getBottomPointOfFigure().getY(); row <= getTopPointOfFigure().getY(); row++) {
+            numbersLines++;
+            for (int column = 0; column <= SIZE; column++) {
+                if (glassBoard.isFree(column,row)) {
+                    if (!checkPointPartFigure(column,row)) {
+                        numbersLines--;
+                        break;
+                    }
+                }
+            }
+        }
+        return numbersLines;
+    }
+
+    /**
+     * Проверяет яавляется ли переданная координаты точки частью фигуры
+     * @param column Столбец
+     * @param row Строка
+     * @return true если переданные данные являются частью фигуры
+     */
+    private boolean checkPointPartFigure(int column, int row) {
+        for (Point point : coordinatesPointsCurrentFigure) {
+            if (point.itsMe(column, row)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -276,7 +367,7 @@ public class Bot {
     }
 
     /**
-     *  Перемещает фигуру в крайне левое положение
+     * Перемещает фигуру в крайне левое положение
      */
     private void moveFigureToLeftBorder(){
         int leftEdgeDistance = getLeftPointOfFigure().getX();
@@ -284,18 +375,16 @@ public class Bot {
         for (Point point : coordinatesPointsCurrentFigure) {
             point.move(point.getX() - leftEdgeDistance, point.getY() + topEdgeDistance);
         }
-        show();
     }
 
     /**
-     * перемещает фигуру в крайне верхнее положение
+     * Перемещает фигуру в крайне верхнее положение
      */
     private void moveFigureToTopBorder(){
         int topEdgeDistance = SIZE - getTopPointOfFigure().getY();
         for (Point point : coordinatesPointsCurrentFigure) {
             point.move(point.getX(), point.getY() + topEdgeDistance);
         }
-        show();
     }
 
     /**

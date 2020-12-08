@@ -12,6 +12,6 @@ import lombok.ToString;
 @ToString
 public class State {
     private Position position;
-    private int points;
+    private double points;
     private int place;
 }
